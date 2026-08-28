@@ -1051,16 +1051,18 @@ function showHome() {
     buildTodayCard() +
     '<div class="section-label">Your Arenas</div>' +
     '<div class="trackgrid">' +
-      '<button class="track math" id="goMath">' +
+      '<div class="track math" id="goMath" role="button" tabindex="0">' +
         '<div class="tico num">Σ</div><div class="torg">North South Foundation</div><h3>Math Arena</h3>' +
         '<p>' + ms.total.toLocaleString() + ' problems, school level to olympiad</p>' +
         '<div class="tprog num">' + ms.done + ' / ' + ms.total.toLocaleString() + ' solved</div>' +
-      '</button>' +
-      '<button class="track chess" id="goChess">' +
+        '<div class="trainrow"><button class="btn gold small" id="trainMath">Train</button><span class="trainnote">10 problems picked for you</span></div>' +
+      '</div>' +
+      '<div class="track chess" id="goChess" role="button" tabindex="0">' +
         '<div class="tico num">♞</div><div class="torg">CheckMates</div><h3>Chess Arena</h3>' +
         '<p>' + cs.total.toLocaleString() + ' puzzles, beginner to grandmaster</p>' +
         '<div class="tprog num">' + cs.done + ' / ' + cs.total.toLocaleString() + ' solved</div>' +
-      '</button>' +
+        '<div class="trainrow"><button class="btn gold small" id="trainChess">Train</button><span class="trainnote">10 puzzles picked for you</span></div>' +
+      '</div>' +
     '</div>' +
     '<div class="section-label">Battle Zone</div>' +
     '<div class="battlegrid">' +
@@ -1082,8 +1084,15 @@ function showHome() {
       '<span style="color:var(--muted)">›</span>' +
     '</div>'
   );
-  document.getElementById("goMath").addEventListener("click", () => showTrack("math"));
-  document.getElementById("goChess").addEventListener("click", () => showTrack("chess"));
+  const wireCard = (id, fn) => {
+    const el = document.getElementById(id);
+    el.addEventListener("click", fn);
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } });
+  };
+  wireCard("goMath", () => showTrack("math"));
+  wireCard("goChess", () => showTrack("chess"));
+  document.getElementById("trainMath").addEventListener("click", e => { e.stopPropagation(); startTrain("math"); });
+  document.getElementById("trainChess").addEventListener("click", e => { e.stopPropagation(); startTrain("chess"); });
   document.getElementById("goDuel").addEventListener("click", showDuelSetup);
   document.getElementById("goMatch").addEventListener("click", startChessMatch);
   document.getElementById("goBadges").addEventListener("click", showBadges);
@@ -1098,13 +1107,21 @@ function showTrack(track) {
   const head = track === "math"
     ? { name: "Math Arena", org: "North South Foundation", sub: "Train by competition or by topic. Problems adapt to your rating." }
     : { name: "Chess Arena", org: "CheckMates", sub: "Openings, tactics, endgames, and strategy. Puzzles adapt to your rating." };
+  const games = (track === "math" ? S.mathEloGames : S.chessEloGames) || 0;
   setScreen(
     '<div class="card" style="padding:14px 18px">' +
       '<div style="font-size:10.5px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold)">' + head.org + '</div>' +
       '<h1 class="title" style="font-size:21px">' + head.name + tip(head.sub) + '</h1>' +
     '</div>' +
+    '<div class="card" style="padding:13px 18px;display:flex;align-items:center;gap:12px">' +
+      '<div style="flex:1"><b>Personal Training' +
+        tip("One tap starts a session of 10 " + (track === "math" ? "problems" : "puzzles") + " chosen from across the whole arena, matched to your rating. Questions you have already solved are not repeated.") + '</b>' +
+        '<div style="font-size:12.5px;color:var(--muted);margin-top:2px">10 ' + (track === "math" ? "problems" : "puzzles") + ' matched to your rating of <span class="num">' + eloOf(track) + (games < 12 ? "?" : "") + '</span></div></div>' +
+      '<button class="btn gold" id="trainNow">Train</button>' +
+    '</div>' +
     renderTopicList(track, list)
   );
+  document.getElementById("trainNow").addEventListener("click", () => startTrain(track));
   document.querySelectorAll(".topic").forEach(b => b.addEventListener("click", () => showSets(b.dataset.topic)));
 }
 
@@ -1223,6 +1240,40 @@ function pickNextProblem() {
   return true;
 }
 
+/* ---- Personal Training: one tap starts a session drawn from the whole arena ---- */
+function trainPool(track, includeSolved) {
+  // every problem in the track, deduplicated by shared identity, unsolved first-class
+  const list = track === "math" ? MATH_TOPICS : CHESS_MODULES;
+  const pool = [], seen = {};
+  list.forEach(t => {
+    const items = track === "math" ? t.problems : t.items;
+    const p = prog(t.id);
+    items.forEach((it, gi) => {
+      if (!includeSolved && p.correct[gi]) return;
+      if (it.uid) { if (seen[it.uid]) return; seen[it.uid] = 1; }
+      pool.push({ item: it, gi, tid: t.id, track });
+    });
+  });
+  return pool;
+}
+function startTrain(track) {
+  let pool = trainPool(track, false);
+  let replayAll = false;
+  if (!pool.length) { replayAll = true; pool = trainPool(track, true); }
+  if (!pool.length) { toast("i", "No problems are available to train right now."); return; }
+  Q = {
+    topicId: pool[0].tid, pool, entries: [], i: 0, target: Math.min(10, pool.length),
+    correctThisRun: 0, xpThisRun: 0,
+    eloStart: eloOf(track),
+    lesson: "Ten problems chosen for you from across the whole arena, matched to your rating. Questions you have already solved are not repeated.",
+    name: track === "math" ? "Math Training" : "Chess Training", icon: track === "math" ? "Σ" : "♞",
+    track, isDaily: false, isTrain: true, replayAll
+  };
+  Q.luckyI = Math.floor(Math.random() * Math.max(1, Q.target));   // one problem per session pays bonus coins
+  pickNextProblem();
+  renderQuestion(true);
+}
+
 function startReview() {
   const due = reviewDue();
   if (!due.length) { toast("i", "No problems are waiting for review. Miss one and it returns tomorrow."); return; }
@@ -1316,7 +1367,7 @@ function renderQuestion(withLesson) {
     (Q.replayAll ? '<p class="sub" style="text-align:center">You have solved every question here. This review session grants a reduced XP bonus.</p>' : '')
   );
   document.getElementById("quitBtn").addEventListener("click", () => {
-    const leave = () => { if (Q.isAssignment) showAssignmentsHome(); else if (Q.isDaily || Q.isReview) showHome(); else showSets(Q.topicId); };
+    const leave = () => { if (Q.isAssignment) showAssignmentsHome(); else if (Q.isDaily || Q.isReview) showHome(); else if (Q.isTrain) showTrack(Q.track); else showSets(Q.topicId); };
     const answered = !document.getElementById("nextBtn").classList.contains("hidden");
     if (answered || Q.i === 0) leave();
     else askConfirm("Leave this session?", "Your solved questions are saved. Only this unanswered question will be lost.", "Leave", leave, "Keep Training");
@@ -1552,11 +1603,12 @@ function showResults() {
     '</div>'
   );
   const r = document.getElementById("retryBtn");
-  if (r) r.addEventListener("click", () => startQuiz(Q.topicId));
+  if (r) r.addEventListener("click", () => { if (Q.isTrain) startTrain(Q.track); else startQuiz(Q.topicId); });
   const mr = document.getElementById("moreRevBtn");
   if (mr) mr.addEventListener("click", startReview);
   document.getElementById("contBtn").addEventListener("click", () => {
     if (Q.isDaily || Q.isReview) showHome();
+    else if (Q.isTrain) showTrack(Q.track);
     else showSets(Q.topicId);
   });
 }

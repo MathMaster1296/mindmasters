@@ -4,7 +4,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const browser = await chromium.launch(process.env.MM_CHROMIUM ? { executablePath: process.env.MM_CHROMIUM } : {});
   const page = await browser.newPage({ viewport: { width: 1000, height: 950 } });
   const errors = [];
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -284,7 +284,13 @@ const path = require('path');
   (await page.textContent('#screen-root')).includes('Tomorrow brings') ? ok('results screen plants the tomorrow hook') : fail('no tomorrow line');
 
   // ---- studio: daily deal + Champion Aura visibility ----
-  await page.evaluate(() => { STU.tab = 'acc'; showStudio(); });
+  await page.evaluate(() => {
+    // the date-seeded deal item may already be owned via chest loot earlier in this run,
+    // which hides the banner; release it so the check is date-independent
+    const d = dailyDeal();
+    if (d) { S.accOwned = (S.accOwned || []).filter(id => id !== d.id); save(); }
+    STU.tab = 'acc'; showStudio();
+  });
   await page.waitForTimeout(400);
   txt = await page.textContent('#screen-root');
   txt.includes('Deal of the day') ? ok('daily deal banner in accessories') : fail('no deal banner');
