@@ -6,7 +6,7 @@
     const aime = MATH_TOPICS.find(t => t.id === "aime");
     if (aime) {
       aime.problems = aime.problems.concat(AIME_EXTRA);
-      aime.sub = aime.problems.length + " real past AIME problems — answers 0–999";
+      aime.sub = aime.problems.length + " real past AIME problems: answers 0–999";
     }
   }
   if (typeof TEXT_BANK !== "undefined") {
@@ -34,19 +34,19 @@
     }
     MATH_TOPICS.push({
       id: "interalg", name: "Advanced Algebra", icon: "🧬", color: "#3a1055",
-      sub: TEXT_BANK.interalg.length + " real competition problems — Levels ramp 1→5", diff: 3,
-      lesson: "Intermediate Algebra from real competitions: <b>polynomials</b>, <b>inequalities</b>, <b>sequences & series</b>, <b>functional equations</b>, <b>complex numbers</b>. Levels follow the official difficulty grades — Level sets near the end are AIME-caliber.",
+      sub: TEXT_BANK.interalg.length + " real competition problems: Levels ramp 1→5", diff: 3,
+      lesson: "Intermediate Algebra from real competitions: <b>polynomials</b>, <b>inequalities</b>, <b>sequences & series</b>, <b>functional equations</b>, <b>complex numbers</b>. Levels follow the official difficulty grades; Level sets near the end are AIME-caliber.",
       problems: TEXT_BANK.interalg
     });
     MATH_TOPICS.push({
       id: "precalc", name: "Precalc Summit", icon: "📐", color: "#0d4455",
-      sub: TEXT_BANK.precalc.length + " real competition problems — trig, vectors & matrices", diff: 3,
-      lesson: "Real competition precalculus: <b>trigonometric identities</b>, <b>polar form & De Moivre</b>, <b>vectors, dot & cross products</b>, <b>matrices & determinants</b>. Graded Level 1→5 — the summit is steep.",
+      sub: TEXT_BANK.precalc.length + " real competition problems: trig, vectors & matrices", diff: 3,
+      lesson: "Real competition precalculus: <b>trigonometric identities</b>, <b>polar form & De Moivre</b>, <b>vectors, dot & cross products</b>, <b>matrices & determinants</b>. Graded Level 1→5; the summit is steep.",
       problems: TEXT_BANK.precalc
     });
     MATH_TOPICS.push({
       id: "olymp", name: "Olympiad Peak", icon: "🗻", color: "#4a1010", group: "comp",
-      sub: TEXT_BANK.olymp.length + " real olympiad problems — the hardest bank in the app", diff: 4,
+      sub: TEXT_BANK.olymp.length + " real olympiad problems: the hardest bank in the app", diff: 4,
       lesson: "Genuine olympiad problems (IMO-family and national olympiads). These are meant to take a LONG time. Answers are numeric; full rigor lives in the official solutions. Scale the mountain one problem at a time!",
       problems: TEXT_BANK.olymp
     });
@@ -97,15 +97,15 @@
   if (typeof VAULT_PROBLEMS !== "undefined") {
     MATH_TOPICS.push({
       id: "vault", name: "Championship Vault", icon: "🏅", color: "#7a1040",
-      sub: VAULT_PROBLEMS.length + " hand-crafted competition problems — every one a real challenge", diff: 4,
-      lesson: "Original competition-grade problems: <b>Newton's identities</b>, <b>derangements</b>, the <b>British Flag Theorem</b>, <b>telescoping factorials</b>, <b>domino tilings</b>, and more. No formulas-by-rote here — each one needs an idea.",
+      sub: VAULT_PROBLEMS.length + " hand-crafted competition problems: every one a real challenge", diff: 4,
+      lesson: "Original competition-grade problems: <b>Newton's identities</b>, <b>derangements</b>, the <b>British Flag Theorem</b>, <b>telescoping factorials</b>, <b>domino tilings</b>, and more. No formulas-by-rote here; each one needs an idea.",
       problems: VAULT_PROBLEMS
     });
   }
   // real difficulty progression: sort every topic's problems easiest -> hardest
   // (official Level 1-5 grades where available, then coarse difficulty, keeping original order as tiebreak)
   MATH_TOPICS.forEach(t => {
-    if (t.id === "aime") return; // chronological — already meaningful
+    if (t.id === "aime") return; // chronological, already meaningful
     t.problems = t.problems.map((p, i) => [p, i])
       .sort((a, b) => (a[0].diff - b[0].diff) || ((a[0].lv || 0) - (b[0].lv || 0)) || (a[1] - b[1]))
       .map(x => x[0]);
@@ -116,13 +116,13 @@
         type: "board", diff, kind: "mate1", tag: "Mate in 1", nm: p.nmates || 1,
         q: "Find the checkmate in ONE move! (Any mating move counts.)",
         fen: p.fen, solutions: [p.sol],
-        sol: "One winning move: <b>" + p.sol[0] + " → " + p.sol[1] + "</b>" + (p.nmates > 1 ? " (other mates exist too — any counts!)" : "") + ". Always scan every check first!"
+        sol: "One winning move: <b>" + p.sol[0] + " → " + p.sol[1] + "</b>" + (p.nmates > 1 ? " (other mates exist too; any counts!)" : "") + ". Always scan every check first!"
       };
       if (p.kind === "mate2") return {
         type: "board", diff, kind: "mate2", tag: "Mate in 2",
-        q: "Force checkmate in TWO moves — find the one key move, then finish the job!",
+        q: "Force checkmate in TWO moves: find the one key move, then finish the job!",
         fen: p.fen, solutions: [p.sol],
-        sol: "The key move is <b>" + p.sol[0] + " → " + p.sol[1] + "</b> — after any reply, a mate-in-1 follows. Forcing moves first!"
+        sol: "The key move is <b>" + p.sol[0] + " → " + p.sol[1] + "</b>; after any reply, a mate-in-1 follows. Forcing moves first!"
       };
       const tgtName = p.tgt || "piece";
       return {
@@ -137,20 +137,20 @@
     };
     // trimmed warm-up drills (single-movers, for beginners)
     addModule("mate1h", "Mate Warm-Ups I", "⚡", "#123c63",
-      "Queen & rook mates in one — quick pattern drills", 2,
-      "Heavy pieces build walls. The queen mates with king support or against the edge; rooks rule ranks and files. In every puzzle a <b>one-move checkmate</b> exists — and ANY mate you find counts!",
+      "Queen & rook mates in one: quick pattern drills", 2,
+      "Heavy pieces build walls. The queen mates with king support or against the edge; rooks rule ranks and files. In every puzzle a <b>one-move checkmate</b> exists, and ANY mate you find counts!",
       CHESS_GEN.mate1h.slice(0, 100));
     addModule("mate1m", "Mate Warm-Ups II", "🎯", "#4a2a63",
-      "Knight, bishop & pawn mates in one — trickier patterns", 3,
+      "Knight, bishop & pawn mates in one: trickier patterns", 3,
       "Minor pieces mate with finesse: knight smothers, bishop crossfires, humble pawn strikes. Every puzzle has a mate in one by a knight, bishop, or pawn (other mates count too).",
       CHESS_GEN.mate1m.slice(0, 100));
     addModule("mate2", "Mate-in-Two Masters", "🧨", "#6b1010",
-      CHESS_GEN.mate2.length + " forced two-move mates — find the unique key move", 4,
+      CHESS_GEN.mate2.length + " forced two-move mates: find the unique key move", 4,
       "One <b>unique key move</b> forces mate against every defense. Play the key, watch the defense, deliver the blow.",
       CHESS_GEN.mate2);
     addModule("forks", "Fork Factory", "🍴", "#6b1d3a",
-      "Royal knight forks — check the king, win the loot", 2,
-      "The knight's signature crime: a <b>royal fork</b> checks the king while attacking a heavy piece. The king must respond — then the loot falls.",
+      "Royal knight forks: check the king, win the loot", 2,
+      "The knight's signature crime: a <b>royal fork</b> checks the king while attacking a heavy piece. The king must respond, and then the loot falls.",
       CHESS_GEN.forks.slice(0, 100));
     addModule("hanging", "Loose Piece Patrol", "🕵️", "#0e4d3c",
       "Spot the one undefended piece and take it", 2,
@@ -180,7 +180,7 @@
       CHESS_MODULES.push({
         id: "linemates", name: "Mate Hunt: Deep Forcing Lines", icon: "🏹", color: "#3a0d1d", diff: 4,
         sub: MINED_PUZZLES.linemates.length + " forced mates in 2–5 from real game positions",
-        lesson: "These positions come from real games — full boards, real defenses. Calculate the <b>forcing sequence</b>: every check, capture, and threat, all the way to mate. Black always plays the toughest defense.",
+        lesson: "These positions come from real games: full boards, real defenses. Calculate the <b>forcing sequence</b>: every check, capture, and threat, all the way to mate. Black always plays the toughest defense.",
         items: MINED_PUZZLES.linemates.map(lineItem)
       });
     }
@@ -188,7 +188,7 @@
       CHESS_MODULES.push({
         id: "combos", name: "Combination Clinic", icon: "🔗", color: "#0d3a2e", diff: 4,
         sub: MINED_PUZZLES.combos.length + " multi-move winning combinations from real games",
-        lesson: "The hardest skill in chess: a <b>combination</b> — a forced multi-move sequence that wins decisive material. Only one move works at each step, and Black always plays the best defense. Calculate before you touch!",
+        lesson: "The hardest skill in chess: a <b>combination</b>: a forced multi-move sequence that wins decisive material. Only one move works at each step, and Black always plays the best defense. Calculate before you touch!",
         items: MINED_PUZZLES.combos.map(lineItem)
       });
     }
@@ -1829,7 +1829,7 @@ function tapPuzzle(i) {
       BP.busy = true;
       animateMove(boardEl, selIdx, i, piece, () => {
         BP.st = nx; BP.last = [selIdx, i]; redrawPuzzle();
-        // black plays a reply (all replies lose — pick one at random)
+        // black plays a reply (all replies lose; pick one at random)
         const replies = [];
         for (let s0 = 0; s0 < 64; s0++) {
           const p0 = BP.st.b[s0];
@@ -2195,7 +2195,7 @@ function showDuelSetup() {
         '<button class="seg" data-r="5">5 rounds</button></div>' +
       '<div style="margin-top:20px;text-align:center"><button class="btn gold" id="duelGo" style="font-size:16px;padding:13px 34px">Fight</button></div>' +
     '</div>' +
-    '<div class="lessonbox"><b>Scoring:</b> a correct answer = 100 points + 2 points per second remaining. Wrong or out of time = 0. Same difficulty for both players every round — pure skill!</div>'
+    '<div class="lessonbox"><b>Scoring:</b> a correct answer = 100 points + 2 points per second remaining. Wrong or out of time = 0. Same difficulty for both players every round: pure skill!</div>'
   );
   document.getElementById("backBtn").addEventListener("click", showBattle);
   let diff = 1, rounds = 3;
@@ -2356,7 +2356,7 @@ function duelResults() {
     '<div class="card results">' +
       '' +
       '<h2>' + (tie ? "It's a TIE!" : esc(D.players[wIdx]) + " WINS!") + '</h2>' +
-      '<div class="score">' + esc(D.players[0]) + ' ' + D.scores[0] + ' — ' + D.scores[1] + ' ' + esc(D.players[1]) + '</div>' +
+      '<div class="score">' + esc(D.players[0]) + ' ' + D.scores[0] + ' – ' + D.scores[1] + ' ' + esc(D.players[1]) + '</div>' +
       '<div class="rewards">' +
         '<div class="reward"><div class="rv">+25</div><div class="rl">XP for battling</div></div>' +
         '<div class="reward"><div class="rv">' + S.duelsPlayed + '</div><div class="rl">total duels</div></div>' +

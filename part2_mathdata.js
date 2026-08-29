@@ -68,7 +68,7 @@ const MATH_TOPICS = [
 {
   id:"algebra", name:"Algebra Arena", icon:"🗡️", color:"#5b3a10",
   sub:"Quadratics, functions, factoring & series", diff:2,
-  lesson:"Key identity: <b>(x+y)² = x² + 2xy + y²</b> — so x² + y² = (x+y)² − 2xy. Factoring reverses multiplication, and famous sums like 1+2+…+n = n(n+1)/2 save tons of work.",
+  lesson:"Key identity: <b>(x+y)² = x² + 2xy + y²</b>, so x² + y² = (x+y)² − 2xy. Factoring reverses multiplication, and famous sums like 1+2+…+n = n(n+1)/2 save tons of work.",
   problems:[
     {type:"num", diff:2, q:"If x + y = 10 and xy = 21, what is x² + y²?", answer:58,
      sol:"x² + y² = (x+y)² − 2xy = 100 − 42 = 58."},
@@ -122,7 +122,7 @@ const MATH_TOPICS = [
     {type:"num", diff:3, q:"Two similar triangles have sides in ratio 2:3. The smaller has area 12. What is the larger's area?", answer:27,
      sol:"Areas scale as the square of the side ratio: 12 × (3/2)² = 12 × 9/4 = 27."},
     {type:"num", diff:2, q:"A triangle's angles are in the ratio 1:2:3. What is the largest angle (in degrees)?", answer:90,
-     sol:"The parts sum to 6, so each part is 180/6 = 30°. Largest = 3 × 30° = 90° — it's a right triangle!"},
+     sol:"The parts sum to 6, so each part is 180/6 = 30°. Largest = 3 × 30° = 90°: it's a right triangle!"},
     {type:"num", diff:2, q:"What is the distance between the points (0, 0) and (6, 8)?", answer:10,
      sol:"Distance = √(6² + 8²) = √100 = 10. (A scaled 3-4-5 triple!)"}
   ]
@@ -168,7 +168,7 @@ const MATH_TOPICS = [
     {type:"num", diff:3, q:"What is the units digit of 7²⁰²⁶?", answer:9,
      sol:"Powers of 7 end in the cycle 7, 9, 3, 1 (period 4). 2026 = 4·506 + 2, so it matches the 2nd in the cycle: 9."},
     {type:"num", diff:2, q:"What is the smallest prime number greater than 90?", answer:97,
-     sol:"91 = 7·13, 93 = 3·31, 95 = 5·19, and 97 has no small factors — it's prime."},
+     sol:"91 = 7·13, 93 = 3·31, 95 = 5·19, and 97 has no small factors: it's prime."},
     {type:"num", diff:2, q:"What is the 100th positive odd number?", answer:199,
      sol:"The nth odd number is 2n − 1. For n = 100: 200 − 1 = 199."},
     {type:"num", diff:3, q:"What is the remainder when 2¹⁰ is divided by 7?", answer:2,
@@ -222,8 +222,8 @@ const MATH_TOPICS = [
 },
 {
   id:"aime", name:"AIME Gauntlet", icon:"🐉", color:"#6b1010",
-  sub:"AIME-level problems — answers are integers 0–999", diff:4,
-  lesson:"These are <b>real AIME problems</b> from past exams (© MAA, via the AoPS archive). Answers are always integers 0–999. Weapons: <b>telescoping</b>, <b>clever substitution</b>, <b>counting with structure</b>, and patience — real AIME problems are meant to take 10+ minutes each!",
+  sub:"AIME-level problems: answers are integers 0–999", diff:4,
+  lesson:"These are <b>real AIME problems</b> from past exams (© MAA, via the AoPS archive). Answers are always integers 0–999. Weapons: <b>telescoping</b>, <b>clever substitution</b>, <b>counting with structure</b>, and patience; real AIME problems are meant to take 10+ minutes each!",
   problems:[
     {type:"num", diff:4, q:"[1983 AIME #1] Let x, y and z all exceed 1 and let w be a positive number such that log<sub>x</sub>w = 24, log<sub>y</sub>w = 40 and log<sub>xyz</sub>w = 12. Find log<sub>z</sub>w.", answer:60,
      sol:"Flip to base w: log_w x = 1/24, log_w y = 1/40, log_w(xyz) = 1/12. So log_w z = 1/12 − 1/24 − 1/40 = (10−5−3)/120 = 1/60, giving log_z w = 60."},
@@ -248,9 +248,9 @@ const MATH_TOPICS = [
     {type:"num", diff:4, q:"[1993 AIME #1] How many even integers between 4000 and 7000 have four different digits?", answer:728,
      sol:"Thousands digit 4, 5, or 6. If it's even (4 or 6): units has 4 even choices left, then 8·7 for the middle: 2·4·8·7 = 448. If it's 5: units has 5 even choices, then 8·7: 5·56 = 280. Total 728."},
     {type:"num", diff:4, q:"[1994 AIME #1] The increasing sequence 3, 15, 24, 48, … consists of those positive multiples of 3 that are one less than a perfect square. What is the remainder when the 1994th term of the sequence is divided by 1000?", answer:63,
-     sol:"n² − 1 = (n−1)(n+1) is divisible by 3 exactly when n is NOT a multiple of 3 — so 2 out of every 3 values of n work. Starting from n = 2, the 1994th valid n is 2992 (997 full blocks of three reach 2992, containing exactly 1994 valid n). The term is 2992² − 1 = 8,952,063, and its remainder mod 1000 is 63."},
+     sol:"n² − 1 = (n−1)(n+1) is divisible by 3 exactly when n is NOT a multiple of 3, so 2 out of every 3 values of n work. Starting from n = 2, the 1994th valid n is 2992 (997 full blocks of three reach 2992, containing exactly 1994 valid n). The term is 2992² − 1 = 8,952,063, and its remainder mod 1000 is 63."},
     {type:"num", diff:4, q:"[2000 AIME I #1] Find the least positive integer n such that no matter how 10ⁿ is expressed as the product of any two positive integers, at least one of these two integers contains the digit 0.", answer:8,
-     sol:"A zero-free factorization must split 10ⁿ = 2ⁿ · 5ⁿ as (2ᵃ5ᵇ)(2ᶜ5ᵈ) — but if a factor contains both a 2 and a 5 it ends in 0. So the only hope is 2ⁿ × 5ⁿ. Powers of 5 stay zero-free for a while, but 2⁸ = 256 ✓, 5⁸ = 390625 — contains 0! Check smaller n: all zero-free. Answer: 8."},
+     sol:"A zero-free factorization must split 10ⁿ = 2ⁿ · 5ⁿ as (2ᵃ5ᵇ)(2ᶜ5ᵈ), but if a factor contains both a 2 and a 5 it ends in 0. So the only hope is 2ⁿ × 5ⁿ. Powers of 5 stay zero-free for a while, but 2⁸ = 256 ✓, 5⁸ = 390625, which contains a 0! Check smaller n: all zero-free. Answer: 8."},
     {type:"num", diff:4, q:"[1983 AIME #3] What is the product of the real roots of the equation x² + 18x + 30 = 2√(x² + 18x + 45)?", answer:20,
      sol:"Let y = x² + 18x + 45. Then y − 15 = 2√y → y² − 34y + 225 = 0 → y = 25 or 9. y = 9 fails the original (√ gives 6 ≠ −6). So x² + 18x + 45 = 25 → x² + 18x + 20 = 0, whose roots are real (disc > 0) with product 20."}
   ]
