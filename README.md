@@ -60,3 +60,12 @@ node test_v12.js && node test_v12b.js && node test_v13.js && node test_v17.js &&
 
 Seven Playwright suites cover the quiz engine, ratings, chess puzzles,
 retention systems, teacher tools, login, and training sessions.
+
+## More from me
+
+- [Geode](https://mathmaster1296.github.io/geode/): solving polynomials with
+  polygons, an interactive companion to the hyper-Catalan series papers
+- [Multiway Register Machine Explorer](https://mathmaster1296.github.io/multiway-register-machines/):
+  multiway register machines running in the browser, companion code for my paper
+- [DyslexAid](https://github.com/MathMaster1296/dyslexaid): a Chrome extension
+  that makes any web page easier to read
