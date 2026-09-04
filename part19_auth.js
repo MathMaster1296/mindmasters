@@ -259,12 +259,14 @@ function showLoginScreen() {
     '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap">' +
       '<button class="btn gold small" id="addStudent">New student account</button>' +
       '<button class="btn ghost small" id="addTeacher">New teacher account</button>' +
+      '<button class="btn ghost small" id="restoreBk">Restore a backup</button>' +
     '</div>' +
     '<p class="sub" style="margin-top:14px;font-size:11.5px">Accounts live on this device. Each account keeps its own progress, coins and classes.</p>' +
     '</div>'
   );
   document.getElementById("addStudent").addEventListener("click", () => { welcomeRole = "student"; showWelcome(); });
   document.getElementById("addTeacher").addEventListener("click", () => { welcomeRole = "teacher"; showWelcome(); });
+  document.getElementById("restoreBk").addEventListener("click", () => showRestoreScreen(showLoginScreen));
   document.querySelectorAll(".logindel").forEach(x => x.addEventListener("click", e => {
     e.stopPropagation();
     const uid = x.dataset.del;
@@ -378,11 +380,16 @@ function showPasswordSettings() {
         '<button class="btn gold small" id="pwSave">' + (hasPw ? "Change password" : "Set password") + '</button>' +
         (hasPw && u.role !== "teacher" ? '<button class="btn ghost small" id="pwRemove" style="color:var(--red)">Remove password</button>' : '') +
       '</div>' +
+    '</div>' +
+    '<div class="card" style="padding:16px 18px;max-width:430px;display:flex;align-items:center;gap:12px">' +
+      '<div style="flex:1"><b>Backup</b><div class="sub" style="font-size:12px;margin-top:2px">Save this account\'s progress as a code or file.</div></div>' +
+      '<button class="btn ghost small" id="bkOpen">Back up</button>' +
     '</div>'
   );
   attachPwUx();
   const back = () => { if (u.role === "teacher") showTeacherHome(); else showProfile(); };
   document.getElementById("backBtn").addEventListener("click", back);
+  document.getElementById("bkOpen").addEventListener("click", () => showBackupScreen(showPasswordSettings));
   const verifyCur = cb => {
     if (!hasPw) { cb(true); return; }
     pwVerify(document.getElementById("curPw").value, u.hash, cb);
@@ -417,5 +424,177 @@ function showPasswordSettings() {
         back();
       });
     });
+  });
+}
+
+/* ================= PROGRESS BACKUP AND RESTORE =================
+   A backup packs an account's entire saved state into one MMP1 code:
+   JSON, deflate-compressed when the browser supports it, base64, and a
+   djb2 checksum in the same PREFIX-payload-check shape as the other
+   sharing codes. Restoring on any device rebuilds the account. Passwords
+   are never included in a backup; a restored account starts unlocked and
+   a new password can be set in Account and Password. */
+
+function backupCollect() {
+  const u = authActive();
+  const role = u ? u.role : Store.get("mm_role", "student");
+  if (role === "teacher") {
+    return { v: 1, role: "teacher", name: u ? u.name : "", av: "🎓", state: Store.get("mm_teacher", {}) };
+  }
+  return { v: 1, role: "student", name: u ? u.name : (Store.get("mm_state", {}).name || ""), av: u ? u.av : "🦁", state: Store.get("mm_state", {}) };
+}
+
+function _utf8Bytes(str) { return new TextEncoder().encode(str); }
+function _utf8String(bytes) { return new TextDecoder().decode(bytes); }
+function _bytesToB64Big(b) {
+  let s = "";
+  for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode.apply(null, b.subarray(i, i + 8192));
+  return btoa(s);
+}
+function _pipeBytes(bytes, stream, cb, fail) {
+  try {
+    new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()
+      .then(buf => cb(new Uint8Array(buf)))
+      .catch(fail);
+  } catch (e) { fail(e); }
+}
+
+function backupEncode(obj, cb) {
+  const raw = _utf8Bytes(JSON.stringify(obj));
+  const finish = (flag, bytes) => {
+    const b64 = _bytesToB64Big(bytes);
+    cb("MMP1-" + flag + b64 + "-" + lbHash(flag + b64));
+  };
+  if (typeof CompressionStream === "function") {
+    _pipeBytes(raw, new CompressionStream("deflate"), z => finish("z", z), () => finish("r", raw));
+  } else {
+    finish("r", raw);
+  }
+}
+
+function backupDecode(code, cb) {
+  const m = String(code || "").replace(/\s+/g, "").match(/^MMP1-([zr])([A-Za-z0-9+/=]+)-([a-z0-9]{4})$/);
+  if (!m) { cb("That does not look like a MindMasters backup code."); return; }
+  const [, flag, b64, check] = m;
+  if (lbHash(flag + b64) !== check) { cb("This backup code is damaged. Copy the whole code and try again."); return; }
+  let bytes;
+  try { bytes = _b64ToBytes(b64); } catch (e) { cb("This backup code is damaged. Copy the whole code and try again."); return; }
+  const parse = data => {
+    let obj;
+    try { obj = JSON.parse(_utf8String(data)); } catch (e) { cb("This backup could not be read."); return; }
+    if (!obj || obj.v !== 1 || !obj.state || (obj.role !== "student" && obj.role !== "teacher")) {
+      cb("This backup could not be read."); return;
+    }
+    cb(null, obj);
+  };
+  if (flag === "z") {
+    if (typeof DecompressionStream !== "function") { cb("This browser is too old to read compressed backups. Try a current version of Chrome, Safari or Edge."); return; }
+    _pipeBytes(bytes, new DecompressionStream("deflate"), parse, () => cb("This backup could not be read."));
+  } else {
+    parse(bytes);
+  }
+}
+
+/* apply a decoded backup: replace the matching account, or create a new one */
+function backupApply(obj) {
+  const users = authUsers();
+  const name = String(obj.name || obj.state.name || "Champion").slice(0, 20);
+  let uid = Object.keys(users).find(id => users[id].role === obj.role && users[id].name === name);
+  if (!uid) {
+    uid = (obj.role === "teacher" ? "t" : "u") + Math.random().toString(36).slice(2, 10);
+    users[uid] = { id: uid, role: obj.role, name, av: obj.av || (obj.role === "teacher" ? "🎓" : "🦁"), hash: null, hint: "", created: todayStr() };
+  } else if (obj.av) {
+    users[uid].av = obj.av;
+  }
+  authSaveUsers(users);
+  _lsSet("p:" + uid + ":" + (obj.role === "teacher" ? "mm_teacher" : "mm_state"), obj.state);
+  _lsSet("p:" + uid + ":mm_role", obj.role);
+  _lsSet("mm_active", uid);
+  _ssDel("mm_active_s");
+  location.reload();
+}
+
+function backupFileName(name) {
+  const safe = String(name || "account").replace(/[^A-Za-z0-9]+/g, "_").slice(0, 20) || "account";
+  return "MindMasters_" + safe + "_" + todayStr() + ".txt";
+}
+
+function showBackupScreen(backTo) {
+  const data = backupCollect();
+  setScreen(
+    '<div class="backrow"><button class="btn ghost small" id="backBtn">← Back</button>' +
+    '<div><h1 class="title" style="font-size:21px">Back Up Progress</h1>' +
+    '<p class="sub">One code holds everything: ratings, streaks, coins, badges and solved problems.</p></div></div>' +
+    '<div class="card" style="padding:16px 18px">' +
+      '<p class="sub" style="margin-bottom:10px">Progress lives only in this browser. Keep a backup so a cleared browser or a new device never costs ' + esc(data.name || "you") + ' anything. Passwords are not included.</p>' +
+      '<textarea class="lbinput" id="bkOut" readonly rows="5" style="width:100%;font-size:11px;word-break:break-all" placeholder="Preparing your backup code…"></textarea>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+        '<button class="btn gold small" id="bkCopy" disabled>Copy code</button>' +
+        '<button class="btn small" id="bkFile" disabled>Save as file</button>' +
+      '</div>' +
+      '<p class="sub" style="font-size:11.5px;margin-top:10px">To move to another device: open MindMasters there, choose "Restore a backup" on the login screen, and paste the code or pick the file.</p>' +
+    '</div>'
+  );
+  document.getElementById("backBtn").addEventListener("click", backTo);
+  backupEncode(data, code => {
+    const out = document.getElementById("bkOut");
+    if (!out) return;
+    out.value = code;
+    const copyBtn = document.getElementById("bkCopy"), fileBtn = document.getElementById("bkFile");
+    copyBtn.disabled = false; fileBtn.disabled = false;
+    copyBtn.addEventListener("click", () => {
+      const done = () => { copyBtn.textContent = "Copied!"; setTimeout(() => { copyBtn.textContent = "Copy code"; }, 1600); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => fallbackCopy(code, done));
+      else fallbackCopy(code, done);
+    });
+    fileBtn.addEventListener("click", () => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([code], { type: "text/plain" }));
+      a.download = backupFileName(data.name);
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    });
+  });
+}
+
+function showRestoreScreen(backTo) {
+  setScreen(
+    '<div class="backrow"><button class="btn ghost small" id="backBtn">← Back</button>' +
+    '<div><h1 class="title" style="font-size:21px">Restore a Backup</h1>' +
+    '<p class="sub">Paste a backup code, or pick a saved backup file.</p></div></div>' +
+    '<div class="card" style="padding:16px 18px">' +
+      '<textarea class="lbinput" id="rsIn" rows="5" style="width:100%;font-size:11px;word-break:break-all" placeholder="MMP1-…"></textarea>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">' +
+        '<button class="btn gold small" id="rsGo">Restore</button>' +
+        '<label class="btn ghost small" style="cursor:pointer">Pick a file<input type="file" id="rsFile" accept=".txt,text/plain" style="display:none"></label>' +
+        '<span id="rsErr" style="color:var(--red);font-size:12px;font-weight:700"></span>' +
+      '</div>' +
+    '</div>'
+  );
+  document.getElementById("backBtn").addEventListener("click", backTo);
+  const err = msg => { const el = document.getElementById("rsErr"); if (el) el.textContent = msg || ""; };
+  const attempt = code => {
+    err("");
+    backupDecode(code, (e, obj) => {
+      if (e) { err(e); return; }
+      const users = authUsers();
+      const name = String(obj.name || obj.state.name || "Champion").slice(0, 20);
+      const existing = Object.keys(users).find(id => users[id].role === obj.role && users[id].name === name);
+      const what = obj.role === "teacher" ? "teacher account" : "student account";
+      if (existing) {
+        askConfirm("Replace " + esc(name) + "?", "A " + what + " named " + esc(name) + " already exists on this device. Restoring replaces its progress with the backup. There is no undo.", "Replace", () => backupApply(obj));
+      } else {
+        askConfirm("Restore " + esc(name) + "?", "This creates the " + what + " " + esc(name) + " on this device with all of the backup's progress.", "Restore", () => backupApply(obj));
+      }
+    });
+  };
+  document.getElementById("rsGo").addEventListener("click", () => attempt(document.getElementById("rsIn").value));
+  document.getElementById("rsFile").addEventListener("change", e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => attempt(String(r.result));
+    r.onerror = () => err("That file could not be read.");
+    r.readAsText(f);
   });
 }

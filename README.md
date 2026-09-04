@@ -19,13 +19,18 @@ What's inside:
 - Separate math and chess ratings, and a Train button in each arena that
   starts a ten-problem session matched to the player's rating
 - Streaks, daily chests, seasons, badges, coins, and an avatar shop
+- A rating history chart on the profile, one point for every rated game
 - A teacher side: classes, weekly assignments, rosters, per-problem analytics,
   printable class reports, and CSV export
 - Multi-account login for shared devices, with salted PBKDF2 password hashing
+- Backup codes: one code or file carries an account's whole progress to
+  another device
 
 Everything runs client-side. There is no server, no tracking, and no network
 requirement after the first load; progress is saved in the browser's local
-storage on each device.
+storage on each device. The site installs as an app (Add to Home Screen on
+iPhone and iPad, Install in Chrome), keeps working with no connection, and
+offers an update prompt when a new version ships.
 
 ## Use it
 
@@ -43,8 +48,8 @@ and a coach quick-start guide.
 
 ## Build from source
 
-`index.html` and `MindMasters_Academy.html` are generated. Edit the part
-files, then run:
+`index.html`, `MindMasters_Academy.html`, and `sw.js` are generated. Edit the
+part files, then run:
 
 ```
 python3 assemble.py
@@ -55,8 +60,9 @@ python3 assemble.py
 ```
 npm i playwright
 npx playwright install chromium
-node test_v12.js && node test_v12b.js && node test_v13.js && node test_v17.js && node test_v18.js && node test_v20.js && node test_v21.js
+node test_v12.js && node test_v12b.js && node test_v13.js && node test_v17.js && node test_v18.js && node test_v20.js && node test_v21.js && node test_v22.js
 ```
 
-Seven Playwright suites cover the quiz engine, ratings, chess puzzles,
-retention systems, teacher tools, login, and training sessions.
+Eight Playwright suites cover the quiz engine, ratings, chess puzzles,
+retention systems, teacher tools, login, training sessions, backups, and the
+offline service worker.

@@ -401,7 +401,7 @@ const DEFAULT_STATE = {
   gamesPlayed: 0, gamesWon: 0,
   duelUsed: {}, lichessSolved: 0,
   mathElo: 800, chessElo: 800, mathEloGames: 0, chessEloGames: 0,
-  mathEloPeak: 800, chessEloPeak: 800,
+  mathEloPeak: 800, chessEloPeak: 800, mathHist: [], chessHist: [], a2hsTip: 0,
   todayDate: "", todayCount: 0, dailyGoalHit: "", perfectSessions: 0,
   trainBias: "m", reviewQueue: {}, testBest: {}, testsTaken: 0, reviewCleared: 0,
   lbPeers: {}, cloud: { url: "", cls: "" },
@@ -643,6 +643,11 @@ function eloUpdate(track, problemRating, won) {
   S[kElo] = nv;
   S[kGames] = games + 1;
   if (nv > (S[kPeak] || 800)) S[kPeak] = nv;
+  const kHist = track === "math" ? "mathHist" : "chessHist";
+  const hist = S[kHist] = S[kHist] || [];
+  if (!hist.length) hist.push(cur);   // the chart starts where the player started
+  hist.push(nv);
+  if (hist.length > 400) hist.splice(0, hist.length - 400);
   save();
   return { delta: nv - cur, elo: nv, provisional: games + 1 < 12 };
 }
@@ -944,7 +949,8 @@ function showWelcome() {
     pwFieldsHtml(welcomeRole) +
     '<button class="btn gold" id="startBtn" style="font-size:16px;padding:13px 34px">' + (authActive() ? "Save" : welcomeRole === "teacher" ? "Create Teacher Account" : "Start Training") + '</button>' +
     (Object.keys(authUsers()).length && !authActive()
-      ? '<div style="margin-top:12px"><button class="btn ghost small" id="backLogin">← Back to accounts</button></div>' : '') +
+      ? '<div style="margin-top:12px"><button class="btn ghost small" id="backLogin">← Back to accounts</button></div>'
+      : (!authActive() ? '<div style="margin-top:12px"><button class="btn ghost small" id="welcomeRestore">Moving devices? Restore a backup</button></div>' : '')) +
     '</div>'
   );
   document.querySelectorAll(".rolebtn").forEach(b => b.addEventListener("click", () => {
@@ -954,6 +960,8 @@ function showWelcome() {
   attachPwUx();
   const bl = document.getElementById("backLogin");
   if (bl) bl.addEventListener("click", showLoginScreen);
+  const wr = document.getElementById("welcomeRestore");
+  if (wr) wr.addEventListener("click", () => showRestoreScreen(showWelcome));
   document.querySelectorAll(".avatar-pick").forEach(b => b.addEventListener("click", () => {
     pickedAvatar = b.dataset.av;
     document.querySelectorAll(".avatar-pick").forEach(x => x.classList.toggle("sel", x.dataset.av === pickedAvatar));
@@ -2748,6 +2756,46 @@ function showBadges() {
   );
 }
 
+/* ---- rating history: one line per track, the last 60 rated games ---- */
+function ratingChartHtml() {
+  const mh = (S.mathHist || []).slice(-60), ch = (S.chessHist || []).slice(-60);
+  if (mh.length < 2 && ch.length < 2) {
+    return '<div class="card" style="padding:14px 18px"><b>Rating Journey</b>' +
+      '<p class="sub" style="margin-top:4px">Answer rated problems and your rating line grows here, one point per game.</p></div>';
+  }
+  const W = 600, H = 210, L = 46, R = 14, T = 16, B = 26;
+  const all = mh.concat(ch);
+  let lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+  const pad = Math.max(20, Math.round((hi - lo) * 0.15));
+  lo = Math.max(400, lo - pad); hi = Math.min(3000, hi + pad);
+  if (hi - lo < 60) { hi += 30; lo -= 30; }
+  const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const step = (hi - lo) > 600 ? 200 : (hi - lo) > 250 ? 100 : 50;
+  let grid = "";
+  for (let g = Math.ceil(lo / step) * step; g <= hi; g += step) {
+    grid += '<line x1="' + L + '" y1="' + y(g) + '" x2="' + (W - R) + '" y2="' + y(g) + '" stroke="var(--line)" stroke-width="1"/>' +
+      '<text x="' + (L - 7) + '" y="' + (y(g) + 3.5) + '" text-anchor="end" font-size="11" fill="var(--muted)" class="num">' + g + '</text>';
+  }
+  const lineOf = (hist, color) => {
+    if (hist.length < 2) return "";
+    const x = i => L + (W - L - R) * (hist.length === 1 ? 1 : i / (hist.length - 1));
+    const pts = hist.map((v, i) => x(i).toFixed(1) + "," + y(v).toFixed(1)).join(" ");
+    const lx = x(hist.length - 1), ly = y(hist[hist.length - 1]);
+    return '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<circle cx="' + lx + '" cy="' + ly + '" r="4" fill="' + color + '"/>';
+  };
+  return '<div class="card" style="padding:14px 18px 10px">' +
+    '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+      '<b style="flex:1">Rating Journey' + tip("Each point is one rated game, showing your last 60 in each track. Reviews and second tries never move the line.") + '</b>' +
+      (mh.length > 1 ? '<span class="chip" style="color:var(--blue)"><span class="num">Math ' + mh[mh.length - 1] + '</span></span>' : '') +
+      (ch.length > 1 ? '<span class="chip" style="color:var(--purple)"><span class="num">Chess ' + ch[ch.length - 1] + '</span></span>' : '') +
+    '</div>' +
+    '<svg id="ratingChart" viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;margin-top:6px">' +
+      grid + lineOf(mh, "var(--blue)") + lineOf(ch, "var(--purple)") +
+    '</svg>' +
+  '</div>';
+}
+
 function showProfile() {
   renderTopbar(); setNav("profile");
   const li = levelInfo(S.xp);
@@ -2786,6 +2834,7 @@ function showProfile() {
       tile(S.mathEloPeak || 800, 'Peak Math', 'var(--blue)') +
       tile(S.chessEloPeak || 800, 'Peak Chess', 'var(--purple)') +
     '</div>' +
+    ratingChartHtml() +
     secLab('Solving') +
     accuracyPieHtml() +
     '<div class="statgrid">' +
@@ -2834,6 +2883,7 @@ function showProfile() {
       '<button class="btn ghost small" id="myCodeBtn">My class code</button>' +
       '<button class="btn ghost small" id="editProfile">Edit name and avatar</button>' +
       '<button class="btn ghost small" id="pwBtn">Password</button>' +
+      '<button class="btn ghost small" id="backupBtn">Back up progress</button>' +
       '<button class="btn ghost small" id="logoutBtn">Log out</button>' +
       '<button class="btn ghost small" id="soundBtn">' + (S.soundOff ? "Sounds: off" : "Sounds: on") + '</button>' +
       '<button class="btn ghost small" id="resetBtn" style="color:var(--red)">Reset all progress</button>' +
@@ -2848,6 +2898,7 @@ function showProfile() {
   document.getElementById("myCodeBtn").addEventListener("click", showLeaderboard);
   document.getElementById("editProfile").addEventListener("click", () => { welcomeRole = "student"; showWelcome(); });
   document.getElementById("pwBtn").addEventListener("click", showPasswordSettings);
+  document.getElementById("backupBtn").addEventListener("click", () => showBackupScreen(showProfile));
   document.getElementById("logoutBtn").addEventListener("click", mmLogout);
   document.getElementById("resetBtn").addEventListener("click", () => {
     askConfirm("Erase everything?", "This permanently deletes all progress, XP, ratings, coins and badges. There is no undo.", "Erase All", () => {
@@ -2918,6 +2969,7 @@ if (typeof katex === "undefined") {
   setTimeout(() => toast("!", "Math rendering failed to load. Please re-download the app file; it may be incomplete."), 1200);
 }
 (function boot() {
+  if (typeof initPWA === "function") initPWA();
   if (typeof authGate === "function" && authGate()) return;   // account chooser is showing
   const role = Store.get("mm_role", "student");
   if (role === "teacher" && loadTS().name) { showTeacherHome(); return; }
