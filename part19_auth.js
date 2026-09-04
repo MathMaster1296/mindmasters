@@ -248,12 +248,12 @@ function showLoginScreen() {
     '<p class="sub" style="margin-top:8px">Who is training today?</p>' +
     '<div class="logingrid">' +
       users.map(u =>
-        '<button class="logincard" data-uid="' + u.id + '">' +
-          '<span class="loginav">' + u.av + '</span>' +
+        '<div class="logincard" role="button" tabindex="0" data-uid="' + u.id + '" aria-label="Open ' + esc(u.name) + ', ' + (u.role === "teacher" ? "teacher" : "student") + (u.hash ? ", password protected" : "") + '">' +
+          '<span class="loginav" aria-hidden="true">' + u.av + '</span>' +
           '<span class="loginname">' + esc(u.name) + '</span>' +
           '<span class="loginrole">' + (u.role === "teacher" ? "Teacher" : "Student") + (u.hash ? " · 🔒" : "") + '</span>' +
-          '<span class="lx logindel" data-del="' + u.id + '" title="Delete account">✕</span>' +
-        '</button>').join("") +
+          '<button class="lx logindel" data-del="' + u.id + '" title="Delete ' + esc(u.name) + '\'s account">✕</button>' +
+        '</div>').join("") +
     '</div>' +
     '<div id="loginPane"></div>' +
     '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap">' +
@@ -291,8 +291,8 @@ function showLoginPw(uid) {
   pane.innerHTML =
     '<div class="card loginpw">' +
       '<b>' + esc(u.name) + '</b><span class="sub" style="font-size:12px;margin-left:6px">' + (u.role === "teacher" ? "Teacher" : "Student") + '</span>' +
-      '<div class="pwrow"><input type="password" class="lbinput" id="loginPwIn" placeholder="Password" autocomplete="off" style="margin:0;flex:1">' +
-      '<button class="btn ghost small pweye" id="loginEye" title="Show password">👁</button></div>' +
+      '<div class="pwrow"><input type="password" class="lbinput" id="loginPwIn" placeholder="Password" aria-label="Password for ' + esc(u.name) + '" autocomplete="off" style="margin:0;flex:1">' +
+      '<button class="btn ghost small pweye" id="loginEye" title="Show password" aria-label="Show password">👁</button></div>' +
       '<label class="stayrow"><input type="checkbox" id="stayIn" checked> Keep me signed in on this device</label>' +
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
         '<button class="btn gold small" id="loginGo">Log in</button>' +

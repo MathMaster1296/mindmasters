@@ -25,6 +25,8 @@ What's inside:
 - Multi-account login for shared devices, with salted PBKDF2 password hashing
 - Backup codes: one code or file carries an account's whole progress to
   another device
+- Keyboard and screen reader support throughout, including the chess board,
+  plus profile switches for larger text and for turning animations off
 
 Everything runs client-side. There is no server, no tracking, and no network
 requirement after the first load; progress is saved in the browser's local
@@ -60,9 +62,9 @@ python3 assemble.py
 ```
 npm i playwright
 npx playwright install chromium
-node test_v12.js && node test_v12b.js && node test_v13.js && node test_v17.js && node test_v18.js && node test_v20.js && node test_v21.js && node test_v22.js
+node test_v12.js && node test_v12b.js && node test_v13.js && node test_v17.js && node test_v18.js && node test_v20.js && node test_v21.js && node test_v22.js && node test_v23.js
 ```
 
-Eight Playwright suites cover the quiz engine, ratings, chess puzzles,
-retention systems, teacher tools, login, training sessions, backups, and the
-offline service worker.
+Nine Playwright suites cover the quiz engine, ratings, chess puzzles,
+retention systems, teacher tools, login, training sessions, backups, the
+offline service worker, and accessibility.

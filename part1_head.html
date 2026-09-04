@@ -36,6 +36,20 @@ button{font-family:inherit;cursor:pointer;border:none;}
 input{font-family:inherit;}
 .hidden{display:none !important;}
 
+/* ---------- accessibility ---------- */
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.btn.gold:focus-visible,.diffchip.sel:focus-visible,.rolebtn.sel:focus-visible{outline-color:var(--ink);}
+#screen-root:focus{outline:none;}
+.sq:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--blue);z-index:3;}
+.choice.correct::after{content:" \2713";font-weight:900;color:var(--green);}
+.choice.wrong::after{content:" \2717";font-weight:900;color:var(--red);}
+.btn.small,.diffchip{min-height:38px;}
+body.bigtext #app,body.bigtext #toasts,body.bigtext .mmodal{zoom:1.15;}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important;}
+}
+body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important;}
+
 /* ---------- layout ---------- */
 #app{max-width:920px;margin:0 auto;padding:16px 16px 90px;}
 .screen{animation:fadeUp .35s ease;}
@@ -575,7 +589,8 @@ table.rpt{width:100%;border-collapse:collapse;margin-top:8px;}
 .loginav{display:block;font-size:34px;margin-bottom:6px;}
 .loginname{display:block;font-weight:800;font-size:14.5px;}
 .loginrole{display:block;font-size:11px;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-top:3px;}
-.logindel{position:absolute;top:6px;right:6px;}
+.logindel{position:absolute;top:4px;right:4px;background:none;border:none;color:var(--muted);font-size:14px;padding:4px 8px;min-width:28px;min-height:28px;border-radius:8px;cursor:pointer;}
+.logindel:hover{color:var(--red);background:var(--card2);}
 .loginpw{max-width:360px;margin:16px auto 0;padding:14px 18px;text-align:left;}
 .pwrow{display:flex;gap:6px;align-items:center;margin-top:8px;}
 .pweye{padding:8px 10px;font-size:14px;flex:none;}
@@ -588,7 +603,7 @@ table.rpt{width:100%;border-collapse:collapse;margin-top:8px;}
 </head>
 <body>
 <div id="app">
-  <div id="topbar" class="hidden">
+  <div id="topbar" class="hidden" role="banner">
     <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="24" height="24"><rect x="1.5" y="1.5" width="21" height="21" rx="5.5" fill="none" stroke="var(--gold)" stroke-width="1.8"/><path d="M6.5 17V8l5.5 6 5.5-6v9" fill="none" stroke="var(--gold)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>MindMasters</span></div>
     <div class="statchips">
       <div class="chip lvl"><span id="chipLevel">Lv 1</span></div>
@@ -597,10 +612,10 @@ table.rpt{width:100%;border-collapse:collapse;margin-top:8px;}
       <div class="chip coins"><span id="chipCoins">0 coins</span></div>
     </div>
   </div>
-  <div id="screen-root"></div>
+  <div id="screen-root" role="main" tabindex="-1"></div>
 </div>
-<div id="toasts"></div>
-<div id="bottomnav" class="hidden">
+<div id="toasts" role="status" aria-live="polite"></div>
+<div id="bottomnav" class="hidden" role="navigation" aria-label="Main sections">
   <button data-nav="home"><span class="nico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg></span>Home</button>
   <button data-nav="math"><span class="nico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5h14M12 5 6.5 19M12 5l5.5 14"/><path d="M8.2 14.5h7.6"/></svg></span>Math</button>
   <button data-nav="chess"><span class="nico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h8M9 17.5h6M14.5 17.5c1.2-2.4 2-4.6 2-7A6 6 0 0 0 8 8.6c0 1 .5 1.9 1.4 2.4l-1.6 3.3c-.4.9.2 1.7 1.2 1.7"/><circle cx="10.5" cy="7" r=".6" fill="currentColor"/></svg></span>Chess</button>

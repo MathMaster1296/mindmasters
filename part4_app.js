@@ -402,6 +402,7 @@ const DEFAULT_STATE = {
   duelUsed: {}, lichessSolved: 0,
   mathElo: 800, chessElo: 800, mathEloGames: 0, chessEloGames: 0,
   mathEloPeak: 800, chessEloPeak: 800, mathHist: [], chessHist: [], a2hsTip: 0,
+  reduceMotion: 0, bigText: 0,
   todayDate: "", todayCount: 0, dailyGoalHit: "", perfectSessions: 0,
   trainBias: "m", reviewQueue: {}, testBest: {}, testsTaken: 0, reviewCleared: 0,
   lbPeers: {}, cloud: { url: "", cls: "" },
@@ -718,7 +719,16 @@ function toast(icon, msg) {
   setTimeout(() => t.remove(), 3400);
 }
 const CONF = ["#d9a441", "#7d9bc4", "#7fb08a", "#bd8ba4", "#c98a5e", "#9299c9"];
+/* ---- motion and text-size preferences (device setting or the profile toggles) ---- */
+function motionOff() {
+  return !!(S && S.reduceMotion) || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+function applyPrefs() {
+  document.body.classList.toggle("calm", !!(S && S.reduceMotion));
+  document.body.classList.toggle("bigtext", !!(S && S.bigText));
+}
 function confetti(n) {
+  if (motionOff()) return;
   n = n || 34;
   for (let i = 0; i < n; i++) {
     const c = document.createElement("div");
@@ -803,7 +813,35 @@ document.getElementById("bottomnav").addEventListener("click", e => {
 const ROOT = document.getElementById("screen-root");
 function setScreen(html) {
   ROOT.innerHTML = '<div class="screen">' + html + '</div>';
+  a11yEnhance(ROOT);
   window.scrollTo(0, 0);
+  try { ROOT.focus({ preventScroll: true }); } catch (e) {}   // screen readers announce the new screen
+}
+
+/* ---- accessibility pass over freshly rendered markup ----
+   Placeholder-only inputs get a label, icon buttons expose their title,
+   and clickable cards that are not real buttons become keyboard-operable. */
+function a11yEnhance(root) {
+  root.querySelectorAll("input[placeholder]:not([aria-label]),textarea[placeholder]:not([aria-label])")
+    .forEach(el => el.setAttribute("aria-label", el.placeholder));
+  root.querySelectorAll("button[title]:not([aria-label]),[role=button][title]:not([aria-label])")
+    .forEach(el => el.setAttribute("aria-label", el.title));
+  root.querySelectorAll("div,span,td,li").forEach(el => {
+    if (el.dataset.kb) return;
+    const tagged = el.getAttribute("role") === "button";
+    if (!tagged) {
+      if (getComputedStyle(el).cursor !== "pointer") return;
+      if (el.closest("button,a,[role=button]") !== null && el.closest("button,a,[role=button]") !== el) return;
+      if (el.querySelector("button,a,input,textarea,select")) return;
+      if (el.classList.contains("tip") || el.classList.contains("sq")) return;
+      el.setAttribute("role", "button");
+      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+    }
+    el.dataset.kb = "1";
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
+    });
+  });
 }
 function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 /* hoverable info dot: keeps screens clean, details on demand */
@@ -869,9 +907,12 @@ const isWhitePiece = p => p && p === p.toUpperCase();
 function sqName(idx) { return Engine.sqName(idx); }
 function sqIdx(name) { return Engine.sqIdx(name); }
 
+const PIECE_NAMES = { k: "king", q: "queen", r: "rook", b: "bishop", n: "knight", p: "pawn" };
 function drawBoardEl(el, st, opts) {
   opts = opts || {};
   el.innerHTML = "";
+  el.setAttribute("role", "group");
+  el.setAttribute("aria-label", "Chess board. Use Tab to move between squares and Enter to choose one.");
   const hints = opts.hints || [];
   const hintSet = {};
   hints.forEach(m => hintSet[m.to] = true);
@@ -885,6 +926,13 @@ function drawBoardEl(el, st, opts) {
     const pc = st.b[i];
     if (pc) {
       d.innerHTML = '<span class="pc ' + (isWhitePiece(pc) ? "w" : "b") + '">' + GLYPHS[pc] + '</span>';
+    }
+    if (opts.onTap) {
+      d.setAttribute("role", "button");
+      d.setAttribute("tabindex", "0");
+      d.setAttribute("aria-label", "abcdefgh"[c] + (8 - r) + ", " + (pc ? (isWhitePiece(pc) ? "white " : "black ") + PIECE_NAMES[pc.toLowerCase()] : "empty") +
+        (hintSet[i] ? ", possible move" : "") + (opts.sel === i ? ", selected" : ""));
+      d.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); opts.onTap(i); } });
     }
     if (dsp % 8 === 0) d.innerHTML += '<span class="coord rk">' + (8 - Math.floor(i / 8)) + '</span>';
     if (dsp >= 56) d.innerHTML += '<span class="coord fl">' + "abcdefgh"[i % 8] + '</span>';
@@ -1092,13 +1140,8 @@ function showHome() {
       '<span style="color:var(--muted)">›</span>' +
     '</div>'
   );
-  const wireCard = (id, fn) => {
-    const el = document.getElementById(id);
-    el.addEventListener("click", fn);
-    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } });
-  };
-  wireCard("goMath", () => showTrack("math"));
-  wireCard("goChess", () => showTrack("chess"));
+  document.getElementById("goMath").addEventListener("click", () => showTrack("math"));
+  document.getElementById("goChess").addEventListener("click", () => showTrack("chess"));
   document.getElementById("trainMath").addEventListener("click", e => { e.stopPropagation(); startTrain("math"); });
   document.getElementById("trainChess").addEventListener("click", e => { e.stopPropagation(); startTrain("chess"); });
   document.getElementById("goDuel").addEventListener("click", showDuelSetup);
@@ -1355,9 +1398,9 @@ function renderQuestion(withLesson) {
   }
   setScreen(
     '<div class="quizhead">' +
-      '<button class="btn ghost small" id="quitBtn">✕</button>' +
-      '<div class="qprogress"><div style="width:' + Math.round((Q.i / total) * 100) + '%"></div></div>' +
-      '<div class="qcount">' + (Q.i + 1) + '/' + total + '</div>' +
+      '<button class="btn ghost small" id="quitBtn" aria-label="Leave this session">✕</button>' +
+      '<div class="qprogress" role="progressbar" aria-label="Session progress" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + Q.i + '"><div style="width:' + Math.round((Q.i / total) * 100) + '%"></div></div>' +
+      '<div class="qcount" aria-label="Question ' + (Q.i + 1) + ' of ' + total + '">' + (Q.i + 1) + '/' + total + '</div>' +
       (S.combo >= 2 ? '<div class="combo num">×' + S.combo + '</div>' : '') +
     '</div>' +
     (withLesson && Q.lesson ? '<div class="lessonbox" style="padding:9px 14px;font-size:12.5px"><b>' + esc(Q.name) + '</b>' + tip(Q.lesson) + '</div>' : '') +
@@ -1370,7 +1413,7 @@ function renderQuestion(withLesson) {
         '<span style="color:' + col + '">Difficulty <b>' + d20 + '</b>/20 for you</span></div>';
     })() +
     '<div class="card question-card">' + inner + '</div>' +
-    '<div class="feedback" id="feedback"></div>' +
+    '<div class="feedback" id="feedback" role="status" aria-live="polite"></div>' +
     '<div class="quizfoot"><button class="btn hidden" id="nextBtn">Next →</button></div>' +
     (Q.replayAll ? '<p class="sub" style="text-align:center">You have solved every question here. This review session grants a reduced XP bonus.</p>' : '')
   );
@@ -2287,7 +2330,7 @@ function duelQuestion() {
     '<div class="timerwrap"><div id="timerFill" style="width:100%"></div></div>' +
     '<div class="timernum" id="timerNum">' + timeLeft + 's</div>' +
     '<div class="card question-card">' + inner + '</div>' +
-    '<div class="feedback" id="feedback"></div>' +
+    '<div class="feedback" id="feedback" role="status" aria-live="polite"></div>' +
     '<div class="quizfoot"><button class="btn hidden" id="nextBtn">Next →</button></div>'
   );
   const finish = (good, timedOut) => {
@@ -2886,13 +2929,22 @@ function showProfile() {
       '<button class="btn ghost small" id="backupBtn">Back up progress</button>' +
       '<button class="btn ghost small" id="logoutBtn">Log out</button>' +
       '<button class="btn ghost small" id="soundBtn">' + (S.soundOff ? "Sounds: off" : "Sounds: on") + '</button>' +
+      '<button class="btn ghost small" id="motionBtn">' + (S.reduceMotion ? "Animations: off" : "Animations: on") + '</button>' +
+      '<button class="btn ghost small" id="textBtn">' + (S.bigText ? "Text size: large" : "Text size: normal") + '</button>' +
       '<button class="btn ghost small" id="resetBtn" style="color:var(--red)">Reset all progress</button>' +
     '</div>'
   );
   document.getElementById("studioBtn").addEventListener("click", showStudio);
   document.getElementById("profAv").addEventListener("click", showStudio);
+  document.getElementById("profAv").setAttribute("aria-label", "Open the Avatar Studio");
   document.getElementById("soundBtn").addEventListener("click", () => {
     S.soundOff = !S.soundOff; save(); Sfx.correct(); showProfile();
+  });
+  document.getElementById("motionBtn").addEventListener("click", () => {
+    S.reduceMotion = S.reduceMotion ? 0 : 1; save(); applyPrefs(); showProfile();
+  });
+  document.getElementById("textBtn").addEventListener("click", () => {
+    S.bigText = S.bigText ? 0 : 1; save(); applyPrefs(); showProfile();
   });
   document.getElementById("teachBtn").addEventListener("click", mmLogout);
   document.getElementById("myCodeBtn").addEventListener("click", showLeaderboard);
@@ -2969,6 +3021,7 @@ if (typeof katex === "undefined") {
   setTimeout(() => toast("!", "Math rendering failed to load. Please re-download the app file; it may be incomplete."), 1200);
 }
 (function boot() {
+  applyPrefs();
   if (typeof initPWA === "function") initPWA();
   if (typeof authGate === "function" && authGate()) return;   // account chooser is showing
   const role = Store.get("mm_role", "student");
